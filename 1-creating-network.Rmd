@@ -1,0 +1,128 @@
+---
+title: "Network Analysis in R: introduction, creating a network"
+author: "Illarion  Jabine"
+date: "22/12/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+### 1. Required packages:
+
+
+* igraph: Network Analysis and Visualization. It can handle large graphs and provides functions for generating random
+and regular graphs, graph visualization, centrality methods, etc.
+
+* statnet: Statistical analysis of network data including management, exploration, statistical analysis, simulation and vizualization of network data.
+* network package (part of statnet project): a package to create, store, modify and plot the data in network objects
+
+* tidygraph and ggraph: ggraph is an extension of the ggplot2 API tailored to graph visualizations
+
+* visNetwork and networkD3: interactive network plots, tree, dendrogram, and Sankey graphs
+
+* tidyverse
+```{r load libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readr)
+
+```
+
+
+### 2. Key terms
+ * Graph
+ * Nodes or vertices 
+ * Edges or links
+ * Adjacency matrix
+ * Directed/undirected
+ * Graph statistics: 
+   # Network overview
+   # Node overview
+   # Edge overview
+
+
+### 3. Useful Links & books
+https://CRAN.R-project.org/view=GraphicalModels
+https://CRAN.R-project.org/view=SocialSciences
+https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)
+ 
+### 4. Introduction to graphs
+
+ A graph can be defined as a structure made of entities also called vertices or nodes connected by means of edges or links. In mathematical terms, a graph is a pair G = (V, E), where V is a set whose elements are called vertices (singular: vertex), and E is a set of paired vertices, whose elements are called edges (sometimes links or lines). When two nodes are linked we can say that they are somehow related. Nodes are abstractions that represent various objects, e.g. people, geographical locations, etc. 
+ Edges or links may represent various kinds of relationships between nodes: parent and child, sender and receiver, geographical connection, people who know each other, etc. An edge can also contain additional attributes, for example magnitude aspect for an edge. Such graph has weights.
+ A graph can be directed and undirected. If within the context where graph is created the distinction between source and target nodes is meaningful than graph is directed. If we can not identify such a distinction than graph is undirected.
+Examples of directed graphs: parent and child, creditor and borrower, sender and receiver. On the other hand, if we say that borrow can also act as a creditor, or receiver can also send messages to a sender, than graph is undirected. So, context is important.
+ A graph may be fully specified by its adjacency matrix A, which is an nxn square matrix, with Aij specifying the number of connections from vertex i to vertex j. 
+In this matrix 1 indicates there is a connection between the nodes, and 0 indicates no connection. From this matrix we can derive many insights into the structure of the network. 
+
+### 5. Creating network object
+
+ Step 1: Edge list 
+An edge list is a data frame that contains a minimum of two columns, representing pairs of connected nodes. Each node in an edge list is identified by unique ID.
+An edge list can also contain additional columns that describe attributes of the edges, for example type of relationship or some sort of weight. Edge list contains all of the information necessary to create a network object. Edge list can also be represented as an adjacency matrix, with 1 representing connections between nodes.
+
+ Step 2: Node list
+Node list is the second source of information required to create a network. This list contains all the nodes of the network together with some attributes. 
+
+
+
+ Step 3. Create network object
+
+In "data" folder there are already two csv files with edges and nodes.
+As always in R there are already several packages for network analysis: 
+ igraph 
+ statenet 
+ tidygraph
+How to work with different libraries will be covered in dedicated manuals
+First let's import into R edge and node lists. 
+```{r}
+
+social_network_edges <- read_csv("social_network_edges.csv")
+social_network_nodes <- read_csv("social_network_nodes.csv")
+head(social_network_edges)
+head(social_network_nodes)
+```
+Edge list contains the names of people and time they were talking to each other.
+Node list contains attributes such as age and sex.
+
+Step 4. Create igraph object
+
+Let's now create an igraph object. 
+It's important to detach igraph library if you plan to work with netstat library to avoid conflicts.
+As an edge list igraph expects a matrix with two columns.
+
+```{r Igraph object, message=FALSE, warning=FALSE}
+library(igraph)
+# Convert social_network_edges dataframe to a matrix
+social_network_edges_mat <- as.matrix(social_network_edges[,-3])
+
+# Convert this matrix to an igraph object
+gr <- graph.edgelist(social_network_edges_mat, directed = FALSE)
+
+# Make a very basic plot of the network
+plot(gr)
+```
+
+statnet package uses network() function to create a graph object
+
+```{r network object, message=FALSE, warning=FALSE}
+detach(package:igraph)
+library(statnet)
+
+gr_network <- network(social_network_edges, vertex.attr = social_network_nodes, matrix.type = "edgelist", ignore.eval = FALSE)
+
+class(gr_network)
+
+# Make a very basic plot of the network
+plot(gr_network, vertex.cex = 3)
+```
+
+
