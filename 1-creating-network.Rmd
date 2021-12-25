@@ -107,6 +107,10 @@ social_network_edges_mat <- as.matrix(social_network_edges[,-3])
 # Convert this matrix to an igraph object
 gr <- graph.edgelist(social_network_edges_mat, directed = FALSE)
 
+# Another way to create an igraph object is by using graph_from_data_frame() function:
+
+g1 <- graph_from_data_frame(d = social_network_edges, vertices = social_network_nodes, directed = FALSE)
+
 # Make a very basic plot of the network
 plot(gr)
 ```
@@ -124,5 +128,3 @@ class(gr_network)
 # Make a very basic plot of the network
 plot(gr_network, vertex.cex = 3)
 ```
-
-
