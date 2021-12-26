@@ -1,0 +1,190 @@
+---
+title: "igraph: adding attributes, subsetting, deleting edges, plot with edge weights"
+author: "Illarion  Jabine"
+date: "25/12/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+### 1. Required packages:
+
+In this manual I will work with igraph library.
+
+* igraph: Network Analysis and Visualization. It can handle large graphs and provides functions for generating random
+and regular graphs, graph visualization, centrality methods, etc.
+
+* tidyverse
+```{r load libraries, message=FALSE, warning=FALSE}
+library(igraph)
+
+```
+
+
+### 2. Key terms
+See manual "1-creating-network.Rmd"
+
+### 3. Useful Links & books
+https://igraph.org/r/
+https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)
+ 
+### 4. Extracting information from igraph object
+I will use igraph object created in "1-creating-network.Rmd"
+gr <- graph.edgelist(social_network_edges_mat, directed = FALSE)
+
+g1 object was created:
+
+g1 <- graph_from_data_frame(d = social_network_edges, vertices = social_network_nodes, directed = FALSE)
+
+There are numerous function to extract information from igraph object:
+
+```{r}
+class(gr)
+# Subset vertices and edges
+#Vertices of a graph:
+V(gr)
+
+#Edges of a graph:
+E(gr)
+
+# The size of the graph (number of edges)
+gsize(gr)
+
+# Order (number of vertices) of a graph
+gorder(gr)
+```
+
+### 5. Node and edge attributes and subsetting
+
+We can add attributes to vertices in the network and view them.
+Our social network nodes have 'genders' and 'age' attributes.
+Let's add them to our graph object using set_vertex_attr() and set_edge_attr() functions.
+
+```{r}
+head(social_network_nodes)
+head(social_network_edges)
+#  Add gender attribute gr object was created with 
+gr <- set_vertex_attr(gr, "gender", value = social_network_nodes$gender)
+
+#  Add age attribute
+gr <- set_vertex_attr(gr, "age", value = social_network_nodes$age)
+
+# View all vertex attributes in a list
+vertex_attr(gr)
+
+# View attributes of first 10 vertices:
+V(gr)[[1:10]]
+
+# If you view gr object you will notice that nodes now have these attributes.
+```
+
+Let's add edge attributes:
+```{r}
+# Create new edge attribute called 'hours'
+gr <- set_edge_attr(gr, "hours", value = social_network_edges$hours)
+
+# View edge attributes of graph object
+edge_attr(gr)
+
+# View attributes of first 10 edges
+E(gr)[[1:10]]
+
+```
+
+Graph subsetting
+
+I will use here below g1 object.
+With graph subsetting we can answer the following questions:
+
+```{r}
+# View all vertex with name Joe
+V(g1)[V(g1)$name == "Joe"]
+
+# or gender female
+V(g1)[V(g1)$gender == "F"]
+
+# gender male and older than 30:
+V(g1)[V(g1)$gender == "M" & V(g1)$age > 30]
+
+# View all edges that include the person "Troy"
+E(g1)[[inc('Troy')]]
+
+# View all edges where the attribute "hours" is greater than or equal to 4 hours
+E(g1)[[hours>=4]]
+```
+
+Adding additional attributes.
+
+Let's create a new vertex attribute containing color names: "blue" for females and "red" for males
+```{r}
+# Set vertex color by gender
+V(g1)$color <- ifelse(V(g1)$gender == "F", "blue", "red")
+# New attribute has been added to object:
+# + attr: name (v/c), gender (v/c), age (v/n), color (v/c), hours (e/n)
+g1
+
+# Plot the graph
+plot(g1, vertex.label.color = "black")
+```
+
+### 6. Network layouts
+
+igraph  provides several built in layout algorithms for network visualization. Depending upon the size of a given network different layouts may be more effective in communicating the structure of the network. Ideally the best layout is the one that minimizes the number of edges that cross each other in the network.
+```{r}
+# Plot the graph object g1 in a circle layout
+plot(g1, vertex.label.color = "black", layout = layout_in_circle(g1))
+
+# Plot the graph object g1 in a Fruchterman-Reingold layout 
+plot(g1, vertex.label.color = "black", layout = layout_with_fr(g1))
+
+# Plot the graph object g1 in a Tree layout 
+plot(g1, vertex.label.color = "black", layout = layout_as_tree(g1))
+
+# Plot the graph object g1 using igraph's chosen layout 
+plot(g1, vertex.label.color = "black", layout = layout_nicely(g1))
+```
+
+### 7. Changing the size of edges, removing edges
+
+We can change the size of edges in a network based on their weight. Some less important edges can be deleted which leads to more effective visualization of large and highly clustered networks.
+
+The weight of each edge is the number of hours each pair spend together which can be obtained using E(g1)$hours
+
+```{r}
+# Create a vector of weights based on the number of hours each pair spend
+w1 <- E(g1)$hours
+
+# Plot the network varying edges by weights
+plot(g1, 
+        vertex.label.color = "black", 
+        edge.color = 'black',
+        edge.width = w1,
+        layout = layout_nicely(g1))
+
+```
+
+To make graph visual more readable let's remove edges that are less than 2 hours long.
+delete_edges() function is used:
+
+```{r}
+g2 <- delete_edges(g1, E(g1)[hours < 2])
+
+# Plot the new graph 
+w2 <- E(g2)$hours
+
+plot(g2, 
+     vertex.label.color = "black", 
+     edge.color = 'black',
+     edge.width = w2,
+     layout = layout_nicely(g2))
+```
+
