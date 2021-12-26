@@ -107,7 +107,9 @@ social_network_edges_mat <- as.matrix(social_network_edges[,-3])
 # Convert this matrix to an igraph object
 gr <- graph.edgelist(social_network_edges_mat, directed = FALSE)
 
-# Another way to create an igraph object is by using graph_from_data_frame() function:
+# Another way to create an igraph object is by using graph_from_data_frame() function.
+# It creates an igraph object with attributes directly from dataframes. I think it's easier to use this function. 
+# Of course the dataframes must have correct format.
 
 g1 <- graph_from_data_frame(d = social_network_edges, vertices = social_network_nodes, directed = FALSE)
 
