@@ -1,7 +1,7 @@
 ---
 title: "igraph: directed graph, basic vertex analysis"
 author: "Illarion  Jabine"
-date: "26/12/2021"
+date: "28/12/2021"
 output:
   pdf_document: default
   html_document: default
