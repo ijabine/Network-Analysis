@@ -1,0 +1,258 @@
+---
+title: "igraph: directed graph, basic vertex analysis"
+author: "Illarion  Jabine"
+date: "26/12/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+### 1. Required packages:
+
+In this manual I will work with igraph library.
+
+* igraph: Network Analysis and Visualization. It can handle large graphs and provides functions for generating random
+and regular graphs, graph visualization, centrality methods, etc.
+
+* tidyverse
+```{r load libraries, message=FALSE, warning=FALSE}
+library(igraph)
+
+```
+
+
+### 2. Key terms
+See manual "1-creating-network.Rmd"
+
+### 3. Useful Links & books
+https://igraph.org/r/
+https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)
+ 
+### 4. Creating directed graph from a csv file
+I will convert the dataframe epidemia into an igraph graph object using the function graph_from_data_frame()
+It will be a directed graph by setting "directed" argument to TRUE.
+```{r}
+epidemia <- read_csv("epidemia.csv")
+
+# Get graph object
+g <- graph_from_data_frame(epidemia, directed = TRUE)
+# when you print graph object you will see this:
+# IGRAPH 59a77e0 DN-- 187 184 -- 
+# DN stands for directed
+
+# Is the graph directed?
+is.directed(g)
+
+# Is the graph weighted?
+is.weighted(g)
+
+# Where does each edge originate from?
+table(head_of(g, E(g)))
+
+```
+
+Visualization of the network
+```{r}
+plot(g, 
+     vertex.label.color = "black", 
+     edge.color = 'gray',
+     vertex.size = 0,
+     edge.arrow.size = 0.1,
+     layout = layout_nicely(g))
+```
+
+To improve visibility of the plot, let's make the vertex size equal to 0 and the edge arrow size equal to 0.1:
+
+
+### 5. Identifying edges for each vertex
+
+For one particular vertex we can determine if an edge exists between two vertices as well as finding all vertices connected in either direction to a given vertex.
+```{r}
+
+# Is there an edge going from vertex 177 to vertex 180?
+g['177', '180']
+
+# Is there an edge going from vertex 45 to vertex 180?
+g['45', '180']
+
+# Show all edges going to or from vertex 182
+incident(g, '182', mode = c("all"))
+
+# Show all edges going out from vertex 182
+incident(g, '182', mode = c("out"))
+
+# Show all edges going in vertex 182
+incident(g, '182', mode = c("in"))
+
+```
+
+
+### 6. Neighbors
+
+Neighboring help to explore the patterning of connections that exist between vertices.
+Function neighbors() allows to identify the vertices that are connected in any manner to a given vertex. Those vertices that direct an edge to a given vertex and those vertices that receive a directed edge from a given vertex.
+```{r}
+# Identify all neighbors of vertex 7 regardless of direction
+
+neighbors(g, '7', mode = c('all'))
+
+# Identify other vertices that direct edges towards vertex 7
+neighbors(g, '7', mode = c('in'))
+
+```
+Let's now determine if 2 vertices A and B have a neighbor in common. 
+Create a vector x1 of those vertices that receive an edge from vertex A and a vector x2 of those vertices that direct an edge to vertex B. 
+Using intersection() function we can identify if there are any vertices that exist in both x1 and x2.
+Let's see if vertices 184 and 37 have a neighbor in common. 
+```{r}
+# Identify any vertices that receive an edge from vertex 184 and direct an edge to vertex 37
+
+x1 <- neighbors(g, '184', mode = c('out'))
+x2 <- neighbors(g, '37', mode = c('in'))
+intersection(x1, x2)
+
+```
+
+### 7. Distances between vertices, diameter, longest path, vertices reachable within n connections
+
+The number of intervening edges between two vertices represents the distance between vertices. Vertices that are connected to each other have a distance of 1. Those that share a neighbor in common but are not connected to each other have a distance of 2 and so on.
+Let's find the longest paths between vertices in a network. We can also discern those vertices that are within n connections of a given vertex.
+```{r}
+#- Which two vertices are the furthest apart in the graph ?
+farthest_vertices(g) 
+
+#- Shows the path sequence between two furthest apart vertices.
+get_diameter(g)  
+```
+
+ego() function finds the vertices not farther than a given limit from another fixed vertex, these are called the neighborhood of the vertex.
+```{r}
+# Identify vertices that are reachable within 3 connections from vertex 177
+ego(g, 3, '177', mode = c('out'))
+```
+If graph is undirectional than the number of neighbors will be much bigger:
+```{r}
+g_undir <- graph_from_data_frame(epidemia, directed = FALSE)
+ego(gn, 3, '177', mode = c('out'))
+
+# 177,180,184,179,4,6,73,28,41,70,77,45,182,181,178,183,79,68,139,140,155,12,22,10,31,93,8,56,58,186,64,74,5,39,82,44,1,47,97,116,145,153,156,2,15,23,26,30,32,33,46,11,37,9,35,34,17,19,78,21,16,14,20,42,94,135,160
+
+```
+
+```{r}
+# Identify vertices that can reach vertex 177 within two connections
+ego(g, 2, '177', mode = c('in'))
+```
+
+
+### 8. Key vertices 
+
+The degree of a vertex is measure of vertex importance.
+The out-degree of a vertex is the number of other vertices to which a vertex has an outgoing edge directed to. 
+The in-degree is the number of edges received from other vertices.
+In our epidemia network, people that infect many others will have a high out-degree.
+To answer this we will use degree() function. This function returns a vector of numbers referring to the degree of each vertex
+```{r}
+# Calculate the out-degree of each vertex
+g_out_degree <- degree(g, mode = c("out"))
+
+# View a summary of out-degree
+table(g_out_degree)
+
+# vertex with the maximum out-degree:
+g_out_degree[which.max(g_out_degree)]
+
+# Make a histogram of out-degrees
+hist(g_out_degree, breaks = 30)
+
+```
+
+
+
+### 9. Betweenness 
+
+Betweenness is another measure of the importance of a given vertex.
+It is a measure of how frequently the vertex lies on shortest paths between any two vertices in the network. It indicates how critical the vertex is to the flow of information through a network. Vertices with high betweenness are key bridges between different parts of a network. In our epidemia transmission network, vertices with high betweenness are those individuals who were central to passing on the disease to other parts of the network.
+
+Given the huge disparity in betweenness scores (they are often skewed) in this network, normalizing the scores (by log or sqrt transform) can ensure that all nodes can be viewed but their relative importance is still identifiable.
+
+```{r}
+# Calculate betweenness of each vertex for directed graph
+g_between_dir <- betweenness(g, directed = TRUE)
+
+# Show histogram of vertex betweenness
+hist(g_between_dir, breaks = 80)
+# Create plot with vertex size determined by betweenness score
+plot(g, 
+     #vertex.label = NA,
+     edge.color = 'black',
+    vertex.size = sqrt(g_between_dir)+1,
+    #vertex.size = log(g_between_dir),
+     edge.arrow.size = 0.05,
+     layout = layout_nicely(g))
+
+#  Let's see now how betweenness changes for indirect graph.
+
+g_between_undir <- betweenness(g_undir, directed = FALSE)
+
+
+plot(g_undir, 
+     #vertex.label = NA,
+     edge.color = 'black',
+    #vertex.size = sqrt(g_between_undir)+1,
+    vertex.size = log(g_between_undir),
+     edge.arrow.size = 0.05,
+     layout = layout_nicely(g))
+
+```
+
+
+### 10. creating a subset of the network 
+
+We don't have any information about who infected a person labeled 184. So, it seems to be "patient zero".
+One way to explore the importance of this vertex is by visualizing the geodesic distances of connections going out from this individual.
+
+I will use make_ego_graph() function to create a subset of our network comprised of vertices that are connected to vertex 184.
+The second argument (order) is the maximal number of connections that any vertex needs to be connected to our vertex of interest. I will use diameter() to return the length of the longest path in the network. 
+The third argument is our vertex of interest which should be 184. 
+The final argument is the mode. We can include all connections regardless of direction.
+
+```{r}
+# diameter() is used to return the length of the longest path in the network.
+g_184 <- make_ego_graph(g, diameter(g), nodes = '184', mode = c("all"))[[1]]
+
+# object dist contains the geodesic distance of every vertex from vertex 184. 
+dist <- distances(g_184, "184")
+
+# Create a color palette of length equal to the maximal geodesic distance plus one.
+colors <- c("green", "red", "orange", "blue", "dodgerblue", "cyan")
+
+# Set color attribute to vertices of network g_184.
+V(g_184)$color <- colors[dists+1]
+
+# Visualize the network based on geodesic distance from vertex 184.
+plot(g_184, 
+     vertex.label = dist, 
+     vertex.label.color = "black",
+     vertex.label.cex = .6,
+     edge.color = 'black',
+     vertex.size = 7,
+     edge.arrow.size = .05,
+     main = "Geodesic Distances from Patient Zero"
+     )
+
+
+```
+
+
+
+### 8. Key vertices 
