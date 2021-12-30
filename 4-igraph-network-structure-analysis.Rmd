@@ -1,0 +1,223 @@
+---
+title: "igraph: undirected graph structure analysis"
+author: "Illarion  Jabine"
+date: "26/12/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+### 1. Required packages:
+
+In this manual I will work with igraph library.
+
+* igraph: Network Analysis and Visualization. It can handle large graphs and provides functions for generating random
+and regular graphs, graph visualization, centrality methods, etc.
+
+```{r load libraries, message=FALSE, warning=FALSE}
+library(igraph)
+
+```
+
+
+### 2. Key terms
+* Eigenvector centrality
+* Network density 
+* Average path length
+* Diameter
+* Triangles
+* Transitivity
+* Cliques
+* Subgraph
+
+
+### 3. Useful Links & books
+https://igraph.org/r/
+https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)
+ 
+### 4. Creating undirected graph from a dataframe
+
+In this manual I will analyze a social network based on the movie Forrest Gump. Each edge of the network indicates that those two characters were in at least one scene of the movie together. This network is undirected.
+
+I will convert the dataframe gump into an igraph graph object using the function graph_from_data_frame()
+
+graph_from_data_frame(d, directed = TRUE, vertices = NULL)
+
+Arguments:
+d - A data frame containing a symbolic edge list in the first two columns.  Additional columns are considered as edge attributes
+vertices - A data frame with vertex metadata, or NULL.
+ The first column of vertices is assumed to contain symbolic vertex names, this  will be added to the graphs as the ‘name’ vertex attribute. Other columns will be added as additional vertex attributes.
+
+```{r}
+gump <- read_csv("gump.csv")
+
+# Make an undirected network
+g_gump <- graph_from_data_frame(gump, directed = FALSE)
+
+# Is the graph directed?
+is.directed(g_gump)
+
+# Is the graph weighted?
+is.weighted(g_gump)
+
+```
+
+
+### 5. Eigenvector centrality
+Eigenvector centrality is a measure to identify key vertices.  Individuals with high eigenvector centrality are those that are highly connected to other highly connected individuals.
+Eigenvector centrality scores correspond to the values of the first eigenvector of the graph adjacency matrix; these scores may, in turn, be interpreted as arising from a reciprocal process in which the centrality of each actor is proportional to the sum of the centralities of those actors to whom he or she is connected. In general, vertices with high eigenvector centralities are those which are connected to many other vertices which are, in turn, connected to many others (and so on). (The perceptive may realize that this implies that the largest values will be obtained by individuals in large cliques (or high-density substructures).
+
+```{r}
+# Identify key nodes using eigenvector centrality
+g_gump_ec <- eigen_centrality(g_gump)
+
+# The values of the centrality scores are stored in g_gump_ec$vector.
+which.max(g_gump_ec$vector)
+
+```
+Exploratory visualization of the network:
+
+```{r}
+plot(g_gump,
+vertex.label.color = "black", 
+vertex.label.cex = 0.6,
+# Make the size of the vertices equal to 20 times the eigenvector centrality values
+vertex.size = 20*(g_gump_ec$vector),
+edge.color = 'gray',
+main = "Forrest Gump Network"
+)
+```
+
+
+### 6. Network density, average path length and diameter
+
+The density of a graph is the proportion of all potential edges between vertices that actually exist in the network graph. It is an indicator of how well connected the vertices of the graph are.
+For example, a graph with 4 connected vertices below in total might have 6 edges.
+The density of a graph is the ratio of the number of edges and the number of possible edges.
+For the graph below density = 4/6 = 0.6666667
+edge_density() function calculates the density:
+
+```{r}
+df_4 <- data.frame(from = c(1,2,3,4), to = c(2,3,4,1))
+g_4 <- graph_from_data_frame(df_4, directed = FALSE)
+plot(g_4)
+edge_density(g_4)
+
+```
+
+```{r}
+
+edge_density(g_gump) 
+```
+
+Average path length is another measure of how interconnected a network.
+It is calculated by determining the mean of the lengths of the shortest paths between all pairs of vertices in the network.
+distances() calculates the length of all the shortest paths from or to the vertices in the network. 
+shortest_paths() calculates one shortest path (the path itself, and not just its length) from or to the given vertex.
+mean_distance() calculates the average path length.
+
+The diameter of a network is the longest path length between any pair of vertices.
+
+```{r}
+#Get the diameter of the graph
+diameter(g_gump, directed = FALSE)
+
+#Get the average path length of the graph
+mean_distance(g_gump, directed = FALSE)
+
+
+```
+
+### 7. Triangles (aka triads)
+
+A triangle is formed when an edge exists between three given vertices.
+Triangles can serve as a measure of local connectivity in a network graph.
+triangles() finds all closed triangles that exist in a network. 
+
+```{r}
+# Show a matrix of all possible triangles in the Forrest Gump network
+matrix(triangles(g_gump), nrow = 3)
+
+# Count the number of triangles that vertex "MARGO" is in.
+count_triangles(g_gump, vids = 'MARGO')
+
+```
+
+### 8. Transitivity
+
+We can now calculate the transitivity of the network. 
+It is equivalent to the proportion of all possible triangles in the network that are closed.
+Local transitivity is the proportion of closed triangles that the vertex is a part of given the theoretical number of triangles it could be a part of.
+```{r}
+# Calculate  the global transitivity of the network.
+g_gump_tr <- transitivity(g_gump)
+g_gump_tr
+
+# Calculate the local transitivity for vertex MARGO.
+# type is defined as local to indicate that you are calculating a local rather than global transitivity
+transitivity(g_gump, vids = 'MARGO', type = "local")
+
+```
+
+### 9. Cliques
+
+https://en.wikipedia.org/wiki/Clique_(graph_theory)
+
+In a clique every two unique nodes are adjacent. 
+That means every individual node is connected to every other individual node in the clique.
+
+```{r}
+# Identify the largest cliques in the network
+largest_cliques(g_gump)
+
+# Determine all maximal cliques in the network and assign to object 'clq'
+max_cl <- max_cliques(g_gump)
+
+# Calculate the size of each maximal clique.
+table(unlist(lapply(max_cl, length)))
+
+```
+Let's visualize largest cliques as a subset part of a network. It can be done to inspect the inter-connections of particular vertices.
+We already know that there are 2 cliques of size 9.
+We will plot them side-by-side after creating two new igraph objects by subsetting out these cliques from the main network.
+```{r}
+# Assign largest cliques output to g_gump_lc
+g_gump_lc <- largest_cliques(g_gump)
+
+# Create two new undirected subgraphs, each containing only the vertices of each largest clique.
+#Create two new undirected subgraphs using the function subgraph(). 
+# The first,g_gump_sub1, should contain only the vertices in the first largest clique. The second,g_gump_sub2, should contain only the vertices in the second largest clique. 
+g_gump_sub1 <- as.undirected(subgraph(g_gump, g_gump_lc[[1]]))
+g_gump_sub2 <- as.undirected(subgraph(g_gump, g_gump_lc[[2]]))
+
+# Plot the two largest cliques side-by-side
+par(mfrow=c(1,2))
+plot(g_gump_sub1,
+     vertex.label.color = "black", 
+     vertex.label.cex = 0.9,
+     vertex.size = 0,
+     edge.color = 'blue',
+     main = "Clique 1",
+     layout = layout.circle(g_gump_sub1)
+)
+plot(g_gump_sub2,
+     vertex.label.color = "black", 
+     vertex.label.cex = 0.9,
+     vertex.size = 0,
+     edge.color = 'red',
+     main = "Clique 2",
+     layout = layout.circle(g_gump_sub2)
+)
+
+```
+
+
