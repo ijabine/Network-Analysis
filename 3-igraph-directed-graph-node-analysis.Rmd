@@ -31,7 +31,13 @@ library(igraph)
 
 
 ### 2. Key terms
-See manual "1-creating-network.Rmd"
+* Neighbors
+* Distances between vertices
+* Diameter
+* Longest path
+* Vertices reachable within n connections
+* Key vertices
+* Betweenness
 
 ### 3. Useful Links & books
 https://igraph.org/r/
@@ -216,7 +222,7 @@ plot(g_undir,
 ```
 
 
-### 10. creating a subset of the network 
+### 10. Creating a subset of the network 
 
 We don't have any information about who infected a person labeled 184. So, it seems to be "patient zero".
 One way to explore the importance of this vertex is by visualizing the geodesic distances of connections going out from this individual.
@@ -252,7 +258,3 @@ plot(g_184,
 
 
 ```
-
-
-
-### 8. Key vertices 
