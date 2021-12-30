@@ -1,7 +1,7 @@
 ---
 title: "igraph: undirected graph structure analysis"
 author: "Illarion  Jabine"
-date: "26/12/2021"
+date: "29/12/2021"
 output:
   pdf_document: default
   html_document: default
