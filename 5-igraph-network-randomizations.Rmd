@@ -1,0 +1,100 @@
+---
+title: "igraph: network randomizations"
+author: "Illarion  Jabine"
+date: "30/12/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+### 1. Required packages:
+
+In this manual I will work with igraph library.
+
+* igraph: Network Analysis and Visualization. It can handle large graphs and provides functions for generating random
+and regular graphs, graph visualization, centrality methods, etc.
+
+```{r load libraries, message=FALSE, warning=FALSE}
+library(igraph)
+
+```
+
+
+### 2. Key terms
+* erdos.renyi.game()
+* Random graph
+* Randomization test
+
+### 3. Useful Links & books
+https://igraph.org/r/
+https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)
+ 
+### 4. Generating a random graph
+
+In this manual I will analyze a social network based on the movie Forrest Gump. Each edge of the network indicates that those two characters were in at least one scene of the movie together. This network is undirected.
+Random graphs is used to investigate how likely or unlikely other network metrics may occur given certain properties of the original graph.
+The simplest random graph is one that has the same number of vertices and approximately the same density as the original graph.
+A random graph is generated using the function erdos.renyi.game(). 
+The first argument n should be the number of nodes of the graph g_gump, which can be calculated using gorder()
+The second argument p.or.m should be the density of the graph g_gump.
+The final argument is set as type='gnp' to tell the function that you are using the density of the graph to generate a random graph.
+
+```{r}
+gump <- read_csv("gump.csv")
+
+# Make an undirected network
+g_gump <- graph_from_data_frame(gump, directed = FALSE)
+
+# Get density of a graph
+g_gump_dens <- edge_density(g_gump)
+
+# Create one random graph with the same number of nodes and edges as g
+g_gump_random <- erdos.renyi.game(n = gorder(g_gump), p.or.m = g_gump_dens, type = "gnp")
+
+plot(g_gump_random)
+
+# Get density of new random graph g_gump_random
+edge_density(g_gump_random)
+
+#Get the average path length of the random graph g_gump_random
+g_gump_adl <- mean_distance(g_gump_random, directed = FALSE)
+```
+
+
+### 5. Randomization test
+
+By using random graphs (network randomizations) we can start testing various hypothesis about origan graph.
+For example, we can test a hypothesis about Gump network average path length by by creating 1000 random graphs based on the number of vertices and density of the original Forrest Gump graph. We can see how many times the average path length of the random graphs is less than the original Forrest Gump network (so called randomization test).
+```{r}
+# Create an empty list with 1000 elements
+# using vector() function one can crate a vector of different types: character, numeric, etc: vector('numeric',1000), vector('characters',1000)
+
+g_gump_list <- vector('list',1000)
+
+for(i in 1:1000){
+  g_gump_list[[i]] <- erdos.renyi.game(n = gorder(g_gump), p.or.m = g_gump_dens, type = "gnp")
+}
+
+# Calculate average path length of 1000 random graphs
+g_gump_1000_adl <- unlist(lapply(g_gump_list, mean_distance, directed = FALSE))
+
+# Plot the distribution of average path lengths
+hist(g_gump_1000_adl, xlim = range(c(2, 4)))
+abline(v = g_gump_adl, col = "red", lty = 3, lwd = 3)
+
+# Calculate the proportion of graphs with an average path length lower than our observed.
+# It can be considered as the probability that we would expect our observed average path length by chance given the original density and number of vertices of the original graph.
+mean(g_gump_1000_adl < g_gump_adl)
+```
+
+Fro; the plot above we can conclude that the Forrest Gump network is more highly interconnected than random network on average. Despite the fact that the random networks have the same number of vertices and approximately identical graph densities. 
+
