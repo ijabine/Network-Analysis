@@ -1,0 +1,141 @@
+---
+title: "igraph: relationship analysis"
+author: "Illarion  Jabine"
+date: "30/12/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+### 1. Required packages:
+
+In this manual I will work with igraph library.
+
+* igraph: Network Analysis and Visualization. It can handle large graphs and provides functions for generating random
+and regular graphs, graph visualization, centrality methods, etc.
+
+```{r load libraries, message=FALSE, warning=FALSE}
+library(igraph)
+
+```
+
+
+### 2. Key terms
+* Assortativity
+* Reciprocity
+* Community detection
+* Fast-greedy community detection
+* Edge-betweenness community detection
+Let's study how to partition networks into sub-networks and determine which vertices are more highly related to one another than others.
+
+
+### 3. Useful Links & books
+https://igraph.org/r/
+https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)
+ 
+### 4. Creating a graph object
+
+In this manual I will social network of people, see "1-creating-network" and "2-igraph-attributes-subsetting-deleting-edges-plot-weights". 
+Edge list contains the names of people and time they were talking to each other.
+Node list contains attributes such as age and sex.
+
+First let's import into R edge and node lists.
+
+```{r}
+
+social_network_edges <- read_csv("social_network_edges.csv")
+social_network_nodes <- read_csv("social_network_nodes.csv")
+head(social_network_edges)
+head(social_network_nodes)
+
+# create an igraph object is by using graph_from_data_frame() function.
+g1 <- graph_from_data_frame(d = social_network_edges, vertices = social_network_nodes, directed = FALSE)
+
+```
+
+### 5. Assortativity
+
+Assortativity is a measure of how preferentially attached vertices are to other vertices with identical attributes. 
+The degree of assortativity determines how preferentially attached are vertices to other vertices of a similar degree.
+The assortativity coefficient measures the level of homophyly of the graph, based on some vertex labeling or values assigned to vertices. If the coefficient is high, that means that connected vertices tend to have the same labels or similar assigned values.
+
+```{r}
+# Convert the gender attribute into a numeric value
+gender_values <- as.numeric(factor(V(g1)$gender))
+
+# Calculate the assortativity of the network based on gender
+assortativity(g1, gender_values)
+
+# Calculate the assortativity degree of the network
+assortativity.degree(g1, directed = FALSE)
+
+
+```
+Assortativity statistical tests
+
+Using graph randomizations we can assess assortativity from statistical point of view. 
+We will determine how likely the observed assortativity in the friendship network is given the genders of vertices by performing a randomization procedure. You will randomly permute the gender of vertices in the network 1000 times and recalculate the assortativity for each random network.
+
+```{r}
+
+# Calculate the assortativity observed in the network
+obs_assort <- assortativity(g1, gender_values)
+
+# Calculate the assortativity of the network randomizing the gender attribute 1000 times
+# we use sample() to perform random samples and permutations with replace = FALSE
+# table(sample(V(g1)$gender)) - proportion of F and M is the same all the time
+
+# Initialize an empty list with 1000 elements
+results <- vector('list', 1000)
+
+# Run randomization process
+for(i in 1:1000){
+  results[[i]] <- assortativity(g1, sample(gender_values))
+}
+
+# Plot the distribution of assortativity values and add a red vertical line at the original observed value
+hist(unlist(results))
+abline(v = obs_assort, col = "red", lty = 3, lwd=3)
+
+```
+
+### 6. Reciprocity
+
+Reciprocity of a directed network reflects the proportion of edges that are symmetrical, i.e.the proportion of outgoing edges that also have an incoming edge.
+Example can be a network of people who send letters. Certain people may send letters to another but do not receive letters by that individual. 
+Whereas other people may both send letters to each other and so would have a reciprocal tie.
+
+Let's generate a random graph using sample_gnp() function according to the G(n,p) Erdos-Renyi model.
+```{r}
+
+g_recip <- sample_gnp(15, 5/15, directed=TRUE)
+
+plot(g_recip,
+      vertex.label.color = "black", 
+      vertex.label.cex = 1.5,
+      vertex.size = 1,
+      edge.arrow.size = 0.3,
+      edge.arrow.width = 0.5,
+      edge.color = 'blue',
+      main = "Reciprocity"
+	  )
+
+# Calculate the reciprocity of the graph
+reciprocity(g_recip)
+
+```
+### 7. Community detection
+
+Community detection in a network can be seen as clustering or grouping nodes that share common attributes.
+
+
+Fast-greedy community detection
