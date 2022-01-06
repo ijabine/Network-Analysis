@@ -135,7 +135,74 @@ reciprocity(g_recip)
 ```
 ### 7. Community detection
 
-Community detection in a network can be seen as clustering or grouping nodes that share common attributes.
+Community detection in a network can be seen as clustering or grouping of nodes that share common attributes.
+Community structure detection algorithms try to find dense subgraphs in directed or undirected graphs, by optimizing some criteria, and usually using heuristics.
 
+7.1 Fast-greedy community detection
 
-Fast-greedy community detection
+I will use Zachary Karate Club network, which contains 34 club members and 78 edges. Each edge indicates that those two club members interacted outside the karate club as well as at the club.
+With Fast-greedy community detection we will determine how many sub-communities the network has and which club members belong to which subgroups.
+
+```{r}
+karate <- read_csv("karate.csv")
+
+# create an igraph object is by using graph_from_data_frame() function.
+g_karate <- graph_from_data_frame(d = karate, directed = FALSE)
+```
+
+```{r}
+# Perform fast-greedy community detection on network graph
+karate_comm <-  fastgreedy.community(g_karate)
+
+# There are many S3 methods defined for object "communities" that igraph recognizes as being the output of community detection
+## S3 method for class 'communities'
+length(x)
+
+# Determine sizes of each community
+sizes(karate_comm)
+
+# Determine which individuals belong to which community
+membership(karate_comm)
+
+algorithm(karate_comm)
+
+merges(karate_comm)
+
+crossing(karate_comm, graph)
+
+code_len(karate_comm)
+
+is_hierarchical(karate_comm)
+
+# When plotting this object the network will be colored according to community membership.
+
+plot(karate_comm, g_karate)
+
+```
+
+7.2 Edge-betweenness community detection
+
+edge.betweenness.community() is another community detection method.
+Community structure detection based on edge betweenness uses an idea that many networks consist of modules which are densely connected themselves but sparsely connected to other modules.
+The idea of the edge betweenness based community structure detection is that it is likely that edges connecting separate modules have high edge betweenness as all the shortest paths from one module to another must traverse through them. So if we gradually remove the edge with the highest edge betweenness score we will get a hierarchical map, a rooted tree, called a dendrogram of the graph. The leafs of the tree are the individual vertices and the root of the tree represents the whole graph.
+
+edge.betweeness.community() returns various information collected through the run of the algorithm. 
+
+```{r}
+# Perform edge-betweenness community detection on network graph
+karate_comm_edg_betw = edge.betweenness.community(g_karate)
+
+# Determine sizes of each community
+sizes(karate_comm_edg_betw)
+# Compared to Fast-greedy community detection this algorithm has detected 4 communities
+
+```
+
+Now let's compare two algoriths:
+```{r}
+# Plot community networks determined by fast-greedy and edge-betweenness methods side-by-side
+
+par(mfrow = c(1, 2)) 
+plot(karate_comm, g_karate)
+plot(karate_comm_edg_betw, g_karate)
+```
