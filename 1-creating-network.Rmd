@@ -98,7 +98,16 @@ Step 4. Create igraph object
 Let's now create an igraph object. 
 It's important to detach igraph library if you plan to work with netstat library to avoid conflicts.
 As an edge list igraph expects a matrix with two columns.
-
+Whne qn igraph object is run in R prompt, a short summart of the graph is printed:
+In the top line of the output, a four-character long code is printed:
+‘D/U’ The first character is either ‘D’ or ‘U’ and encodes whether the graph is directed or undireted.
+‘N’ The second letter is ‘N’ for named graphs. A dash here means that the graph is not named.
+‘W’ The third letter is ‘W’ if the graph is weighted (in other words, if the graph is a valued graph). Unweighted graphs have a dash in
+this position.
+‘B’ Finally, the fourth is ‘B’ if the graph is bipartite. For unipartite (one-mode) graphs a dash is printed here.
+Next two numbers are the number of vertices and the number of edges in the graph.
+The next line(s) list attributes, meta-data that belong to the vertices, edges or the graph itself.
+Finally, the edges of the graph are listed.
 ```{r Igraph object, message=FALSE, warning=FALSE}
 library(igraph)
 # Convert social_network_edges dataframe to a matrix
@@ -115,6 +124,7 @@ g1 <- graph_from_data_frame(d = social_network_edges, vertices = social_network_
 
 # Make a very basic plot of the network
 plot(gr)
+
 ```
 
 statnet package uses network() function to create a graph object
